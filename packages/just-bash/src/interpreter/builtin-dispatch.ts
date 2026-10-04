@@ -765,11 +765,17 @@ export async function executeExternalCommand(
   // External commands - resolve via PATH
   // For command -p, use default PATH /usr/bin:/bin instead of $PATH
   const defaultPath = "/usr/bin:/bin";
-  const resolved = await resolveCommandHelper(
+  const found = await resolveCommandHelper(
     ctx,
     commandName,
     useDefaultPath ? defaultPath : undefined,
   );
+  // Names with a slash are paths, so a missing one is not a command to resolve.
+  const fallback =
+    found || commandName.includes("/") ? undefined : ctx.commandNotFound;
+  const resolved = fallback ? { cmd: fallback, path: commandName } : found;
+  // Like bash's command_not_found_handle, the fallback receives the name first.
+  const commandArgs = fallback ? [commandName, ...args] : args;
   if (!resolved) {
     // Check if this is a browser-excluded command for a more helpful error
     if (isBrowserExcludedCommand(commandName)) {
@@ -801,8 +807,9 @@ export async function executeExternalCommand(
     return await executeUserScript(resolved.path, args, stdin);
   }
   const { cmd, path: cmdPath } = resolved;
-  // Add to hash table for PATH caching (only for non-path commands)
-  if (!commandName.includes("/")) {
+  // Add to hash table for PATH caching (only for non-path commands). A host
+  // fallback has no PATH entry to cache.
+  if (!commandName.includes("/") && !fallback) {
     if (!ctx.state.hashTable) {
       ctx.state.hashTable = new Map();
     }
@@ -961,7 +968,7 @@ export async function executeExternalCommand(
         ctx.requireDefenseContext,
         "command",
         `${commandName} execution`,
-        () => cmd.execute(args, guardedCmdCtx),
+        () => cmd.execute(commandArgs, guardedCmdCtx),
       );
 
     const runBoundedCommand = () =>
