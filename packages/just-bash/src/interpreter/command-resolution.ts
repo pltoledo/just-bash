@@ -102,6 +102,9 @@ export async function resolveCommand(
   // Search PATH directories (use override if provided, for command -p)
   const pathEnv = pathOverride ?? ctx.state.env.get("PATH") ?? "/usr/bin:/bin";
   const pathDirs = pathEnv.split(":");
+  // Like bash, remember the first non-executable match so a failed search
+  // reports it as permission denied instead of not found.
+  let deniedPath: string | undefined;
 
   for (const dir of pathDirs) {
     if (!dir) continue;
@@ -140,6 +143,8 @@ export async function resolveCommand(
             // No registered handler - treat as user script
             return { script: true, path: fullPath };
           }
+        } else {
+          deniedPath ??= fullPath;
         }
       } catch {
         // If stat fails, continue searching
@@ -158,6 +163,9 @@ export async function resolveCommand(
     }
   }
 
+  if (deniedPath) {
+    return { error: "permission_denied", path: deniedPath };
+  }
   return null;
 }
 

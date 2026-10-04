@@ -77,6 +77,28 @@ describe("commandNotFound option", () => {
     expect(calls).toEqual([]);
   });
 
+  it("is not reached by names found in PATH without execute permission", async () => {
+    const calls: string[] = [];
+    const env = new Bash({
+      commandNotFound: forward(calls),
+      files: {
+        "/home/user/a/tool": "echo a",
+        "/home/user/b/tool": "echo b",
+      },
+    });
+
+    const result = await env.exec(
+      'PATH=/home/user/a tool; echo "status=$?"; chmod +x /home/user/b/tool; PATH=/home/user/a:/home/user/b tool',
+    );
+
+    expect(result).toMatchObject({
+      stdout: "status=126\nb\n",
+      stderr: "bash: tool: Permission denied\n",
+      exitCode: 0,
+    });
+    expect(calls).toEqual([]);
+  });
+
   it("serves nested executions", async () => {
     const env = new Bash({ commandNotFound: forward() });
 
