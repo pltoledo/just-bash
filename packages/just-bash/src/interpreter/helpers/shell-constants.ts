@@ -126,3 +126,9 @@ export const SHELL_BUILTINS: Set<string> = new Set([
   "builtin",
   "caller",
 ]);
+
+/**
+ * Name of the shell function bash runs when PATH lookup does not find a
+ * command. See COMMAND EXECUTION in bash(1).
+ */
+export const COMMAND_NOT_FOUND_HANDLE = "command_not_found_handle";

@@ -5,6 +5,7 @@
  */
 
 import type {
+  FunctionDefNode,
   GroupNode,
   ScriptNode,
   StatementNode,
@@ -30,6 +31,7 @@ import {
   getFdAliasMembers,
   getFdEntry,
 } from "./fd-table.js";
+import { callFunction } from "./functions.js";
 import { getErrorMessage } from "./helpers/errors.js";
 import { failure, result } from "./helpers/result.js";
 import {
@@ -401,5 +403,41 @@ export async function executeUserScript(
     }
 
     throw error;
+  }
+}
+
+/**
+ * Run the `command_not_found_handle` function for a command that PATH lookup
+ * did not find. Like bash, the handler runs in a separate execution
+ * environment with the command name and its arguments as positional
+ * parameters, and its exit status becomes the status of the command.
+ */
+export async function executeCommandNotFoundHandle(
+  ctx: InterpreterContext,
+  handler: FunctionDefNode,
+  commandName: string,
+  args: string[],
+  stdin: string,
+): Promise<ExecResult> {
+  const cleanup = beginIsolatedShellState(ctx.state);
+
+  // The handler is a separate process in bash: loop control inside it does
+  // not reach the caller's loops.
+  ctx.state.parentHasLoopContext = false;
+  ctx.state.loopDepth = 0;
+  ctx.state.bashPid = ctx.state.nextVirtualPid++;
+
+  try {
+    return await callFunction(ctx, handler, [commandName, ...args], stdin);
+  } catch (error) {
+    if (error instanceof ExecutionLimitError) {
+      throw error;
+    }
+    if (error instanceof ExitError || error instanceof ErrexitError) {
+      return result(error.stdout, error.stderr, error.exitCode);
+    }
+    throw error;
+  } finally {
+    cleanup();
   }
 }

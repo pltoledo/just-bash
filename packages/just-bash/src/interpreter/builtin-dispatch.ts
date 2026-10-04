@@ -71,8 +71,12 @@ import { getErrorMessage } from "./helpers/errors.js";
 import { resolveNamerefForAssignment } from "./helpers/nameref.js";
 import { isReadonly } from "./helpers/readonly.js";
 import { failure, OK, testResult } from "./helpers/result.js";
-import { SHELL_BUILTINS } from "./helpers/shell-constants.js";
+import {
+  COMMAND_NOT_FOUND_HANDLE,
+  SHELL_BUILTINS,
+} from "./helpers/shell-constants.js";
 import { computeIndexedArrayIndex } from "./simple-command-assignments.js";
+import { executeCommandNotFoundHandle } from "./subshell-group.js";
 import {
   findFirstInPath as findFirstInPathHelper,
   handleCommandV as handleCommandVHelper,
@@ -771,6 +775,16 @@ export async function executeExternalCommand(
     useDefaultPath ? defaultPath : undefined,
   );
   if (!resolved) {
+    const handler = ctx.state.functions.get(COMMAND_NOT_FOUND_HANDLE);
+    if (handler && !commandName.includes("/")) {
+      return await executeCommandNotFoundHandle(
+        ctx,
+        handler,
+        commandName,
+        args,
+        stdin,
+      );
+    }
     // Check if this is a browser-excluded command for a more helpful error
     if (isBrowserExcludedCommand(commandName)) {
       return failure(

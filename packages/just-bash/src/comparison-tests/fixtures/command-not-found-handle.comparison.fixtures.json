@@ -1,0 +1,81 @@
+{
+  "24c7d4d11f901fd5": {
+    "command": "command_not_found_handle() { echo \"read=$(cat)\"; }; echo piped | missing",
+    "files": {},
+    "stdout": "read=piped\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  "90142899f1e355d2": {
+    "command": "command_not_found_handle() { exit 3; }; missing; echo \"after=$?\"",
+    "files": {},
+    "stdout": "after=3\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  "99982cb0a65d58d1": {
+    "command": "command_not_found_handle() { echo \"name=$1 args=[${*:2}] count=$#\"; return 42; }; missing a \"b c\"; echo \"status=$?\"",
+    "files": {},
+    "stdout": "name=missing args=[a b c] count=3\nstatus=42\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  "9c83c31d4d64a9e0": {
+    "command": "command_not_found_handle() { echo handled; }; unset -f command_not_found_handle; missing; echo \"status=$?\"",
+    "files": {},
+    "stdout": "status=127\n",
+    "stderr": "/bin/bash: line 1: missing: command not found\n",
+    "exitCode": 0
+  },
+  "a5d2b8f309b83481": {
+    "command": "command_not_found_handle() { echo \"handled $1\"; return 4; }; command missing; echo \"status=$?\"",
+    "files": {},
+    "stdout": "handled missing\nstatus=4\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  "ae1cf87cb9d5c239": {
+    "command": "command_not_found_handle() { echo handled; }; ./missing; echo \"status=$?\"",
+    "files": {},
+    "stdout": "status=127\n",
+    "stderr": "/bin/bash: line 1: ./missing: No such file or directory\n",
+    "exitCode": 0
+  },
+  "bc821ca32d2526e9": {
+    "command": "command_not_found_handle() { echo \"handled $1\"; }; missing > out.txt; cat out.txt",
+    "files": {},
+    "stdout": "handled missing\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  "be504af23984f100": {
+    "command": "command_not_found_handle() { echo handled; }; type missing >/dev/null 2>&1; echo \"type=$?\"; command -v missing; echo \"v=$?\"",
+    "files": {},
+    "stdout": "type=1\nv=1\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  "d0d00d08df872c80": {
+    "command": "x=before; d=$PWD; command_not_found_handle() { x=after; cd sub; g() { :; }; }; missing; echo \"x=$x\"; [ \"$PWD\" = \"$d\" ] && echo same-dir; type g >/dev/null 2>&1; echo \"g=$?\"",
+    "files": {
+      "sub/.keep": ""
+    },
+    "stdout": "x=before\nsame-dir\ng=1\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  "dbffb1bf93673a38": {
+    "command": "command_not_found_handle() { echo \"sub:$1\"; }; echo \"got $(missing)\"",
+    "files": {},
+    "stdout": "got sub:missing\n",
+    "stderr": "",
+    "exitCode": 0
+  },
+  "f99d179f0c14b9cf": {
+    "command": "command_not_found_handle() { echo \"FOO=$FOO\"; }; FOO=1 missing",
+    "files": {},
+    "stdout": "FOO=1\n",
+    "stderr": "",
+    "exitCode": 0
+  }
+}

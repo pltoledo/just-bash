@@ -79,6 +79,23 @@ in a terminable worker or process. Tests that invoke command objects directly
 can use `createCommandContext({ fs })` to get a fully resolved context without
 duplicating internal defaults.
 
+To handle commands that just-bash does not provide, define the bash
+`command_not_found_handle` function and forward to a custom command. As in
+bash, the handler runs in a separate execution environment with the missing
+command's name and arguments, and its exit status becomes the command's:
+
+```typescript
+const forward = defineCommand("forward", async (args, ctx) => {
+  // Hand the command to another runner here, such as a remote machine.
+  return { stdout: `${ctx.cwd}: ${args.join(" ")}\n`, stderr: "", exitCode: 0 };
+});
+
+const bash = new Bash({ customCommands: [forward] });
+
+await bash.exec('command_not_found_handle() { forward "$@"; }; node --version');
+// "/home/user: node --version\n"
+```
+
 <details>
 <summary><h2>Supported Commands</h2></summary>
 
@@ -126,6 +143,7 @@ All commands support `--help` for usage information.
 - **Glob patterns**: `*`, `?`, `[...]`
 - **If statements**: `if COND; then CMD; elif COND; then CMD; else CMD; fi`
 - **Functions**: `function name { ... }` or `name() { ... }`
+- **Missing commands**: a `command_not_found_handle` function receives the name and arguments of a command PATH lookup did not find
 - **Local variables**: `local VAR=value`
 - **Loops**: `for`, `while`, `until`
 - **Symbolic links**: `ln -s target link`
