@@ -93,7 +93,7 @@ describe("commandNotFound option", () => {
 
     expect(result).toMatchObject({
       stdout: "status=126\nb\n",
-      stderr: "bash: tool: Permission denied\n",
+      stderr: "bash: /home/user/a/tool: Permission denied\n",
       exitCode: 0,
     });
     expect(calls).toEqual([]);
@@ -138,11 +138,6 @@ describe("commandNotFound option", () => {
       script: "command -p missing a; exec missing b",
       stdout:
         "missing [a] cwd=/home/user in=\nmissing [b] cwd=/home/user in=\n",
-      exitCode: 7,
-    },
-    {
-      script: "PATH=/nonexistent ls f",
-      stdout: "ls [f] cwd=/home/user in=\n",
       exitCode: 7,
     },
     {

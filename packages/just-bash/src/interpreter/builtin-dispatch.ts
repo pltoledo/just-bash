@@ -771,8 +771,12 @@ export async function executeExternalCommand(
     useDefaultPath ? defaultPath : undefined,
   );
   // Names with a slash are paths, so a missing one is not a command to resolve.
+  // Registered commands never reach the host either, even when the script
+  // hides them by changing PATH or deleting their stubs.
   const fallback =
-    found || commandName.includes("/") ? undefined : ctx.commandNotFound;
+    found || commandName.includes("/") || ctx.commands.has(commandName)
+      ? undefined
+      : ctx.commandNotFound;
   const resolved = fallback ? { cmd: fallback, path: commandName } : found;
   // Like bash's command_not_found_handle, the fallback receives the name first.
   const commandArgs = fallback ? [commandName, ...args] : args;
@@ -790,7 +794,18 @@ export async function executeExternalCommand(
   // Handle error cases from resolveCommand
   if ("error" in resolved) {
     if (resolved.error === "permission_denied") {
-      return failure(`bash: ${commandName}: Permission denied\n`, 126);
+      // Like bash, remember the file a PATH search found and name it in the
+      // error, as formed from the PATH entry.
+      if (resolved.displayPath && resolved.path) {
+        if (!ctx.state.hashTable) {
+          ctx.state.hashTable = new Map();
+        }
+        ctx.state.hashTable.set(commandName, resolved.path);
+      }
+      return failure(
+        `bash: ${resolved.displayPath ?? commandName}: Permission denied\n`,
+        126,
+      );
     }
     // not_found error
     return failure(`bash: ${commandName}: No such file or directory\n`, 127);

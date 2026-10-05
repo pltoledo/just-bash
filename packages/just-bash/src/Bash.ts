@@ -37,6 +37,7 @@ import {
   mapToRecordWithExtras,
   mergeToNullPrototype,
 } from "./helpers/env.js";
+import { commandStubContent } from "./interpreter/command-resolution.js";
 import {
   ArithmeticError,
   ExecutionAbortedError,
@@ -210,7 +211,11 @@ export interface BashOptions {
    * not found in PATH, such as commands just-bash does not provide. It receives
    * the missing name followed by its arguments, similar to bash's
    * `command_not_found_handle`, and its exit status becomes the command's.
-   * Names that contain a slash never reach it.
+   *
+   * Names that contain a slash never reach it, and neither do the commands this
+   * shell registers, even when a script changes PATH or deletes their stubs.
+   * Commands left out by the `commands` option do reach it. The name and the
+   * arguments come from the script, so treat them as untrusted input.
    *
    * @example
    * ```ts
@@ -618,7 +623,7 @@ export class Bash {
       writeFileSync?: (path: string, content: string) => void;
     };
     if (typeof fs.writeFileSync === "function") {
-      const stub = `#!/bin/bash\n# Built-in command: ${command.name}\n`;
+      const stub = commandStubContent(command.name);
       try {
         fs.writeFileSync(`/bin/${command.name}`, stub);
       } catch {

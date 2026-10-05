@@ -82,7 +82,10 @@ duplicating internal defaults.
 To run commands that just-bash does not provide, pass a command as
 `commandNotFound`. It receives the missing name followed by its arguments,
 similar to bash's `command_not_found_handle`, and nested executions such as
-`bash -c`, `xargs` and `timeout` use it too:
+`bash -c`, `xargs` and `timeout` use it too. Commands the shell registers never
+reach it, even when a script changes `PATH`, while commands left out by the
+`commands` option do. The name and arguments come from the script, so treat them
+as untrusted input:
 
 ```typescript
 const forward = defineCommand("forward", async ([name, ...args], ctx) => {
