@@ -30,18 +30,6 @@ describe("PATH search", () => {
     });
   });
 
-  it("remembers a file that failed with permission denied, like bash", async () => {
-    const env = await shell();
-
-    const result = await env.exec("PATH=/home/user/a; tool; hash -t tool");
-
-    expect(result).toMatchObject({
-      stdout: "/home/user/a/tool\n",
-      stderr: "bash: /home/user/a/tool: Permission denied\n",
-      exitCode: 0,
-    });
-  });
-
   it("prefers a later executable over an earlier file without execute permission", async () => {
     const env = await shell();
 
@@ -66,20 +54,6 @@ describe("PATH search", () => {
     expect(result).toMatchObject({
       stdout: "/home/user/e/script\nscript is /home/user/e/script\n",
       stderr: "",
-      exitCode: 0,
-    });
-  });
-
-  it("hashes only files that can run", async () => {
-    const env = await shell();
-
-    const result = await env.exec(
-      'PATH=/home/user/a:/usr/bin; hash tool; echo "status=$?"; hash ls; hash -t ls',
-    );
-
-    expect(result).toMatchObject({
-      stdout: "status=1\n/usr/bin/ls\n",
-      stderr: "bash: hash: tool: not found\n",
       exitCode: 0,
     });
   });

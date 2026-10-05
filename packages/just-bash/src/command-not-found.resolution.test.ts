@@ -59,22 +59,37 @@ describe("commandNotFound option and command resolution", () => {
     });
   });
 
-  it("treats stubs of commands it does not register as absent", async () => {
+  it("runs stubs of commands it does not register as missing commands", async () => {
     const fs = new InMemoryFs();
     new Bash({ fs });
     const env = new Bash({ fs, commands: ["echo", "chmod"] });
 
     const result = await env.exec(
-      'ls; echo "status=$?"; /usr/bin/ls; echo "status=$?"; chmod +x /bin/ls /usr/bin/ls; ls; echo "status=$?"; command -v ls; type -t ls; hash ls; echo "status=$?"',
+      'ls; echo "status=$?"; /usr/bin/ls; echo "status=$?"; chmod +x /bin/ls /usr/bin/ls; ls; echo "status=$?"',
     );
 
     expect(result).toMatchObject({
-      stdout: "status=127\nstatus=127\nstatus=127\nstatus=1\n",
+      stdout: "status=127\nstatus=127\nstatus=127\n",
       stderr:
         "bash: ls: command not found\n" +
         "bash: /usr/bin/ls: No such file or directory\n" +
-        "bash: ls: command not found\n" +
-        "bash: hash: ls: not found\n",
+        "bash: ls: command not found\n",
+      exitCode: 0,
+    });
+  });
+
+  it("does not find stubs of commands it does not register", async () => {
+    const fs = new InMemoryFs();
+    new Bash({ fs });
+    const env = new Bash({ fs, commands: ["echo"] });
+
+    const result = await env.exec(
+      'command -v ls; echo "status=$?"; type -t ls; echo "status=$?"; hash ls; echo "status=$?"',
+    );
+
+    expect(result).toMatchObject({
+      stdout: "status=1\nstatus=1\nstatus=1\n",
+      stderr: "bash: hash: ls: not found\n",
       exitCode: 0,
     });
   });
